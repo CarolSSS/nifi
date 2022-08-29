@@ -33,9 +33,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -58,6 +59,25 @@ public class TestXMLReader {
 
         runner.enableControllerService(reader);
         return runner;
+    }
+
+    private static List<String> sort(List<String> records) {
+        // Sort the resulting String 
+        // Can call it twice while encountering nested XML
+        List<String> sortedRecords = new ArrayList();
+        for (String i : records) {
+            String start = "MapRecord[{";
+            String end = "}]";
+            List<String> attributes = Arrays.asList(i.substring(start.length(), i.length() - end.length()).split(", "));
+            java.util.Collections.sort(attributes);
+            String sorted = start;
+            for (String j : attributes) {
+                sorted = sorted + j + ", ";
+            }
+            sorted = sorted.substring(0, i.length() - 2) + end;
+            sortedRecords.add(sorted);
+        }
+        return sortedRecords;
     }
 
     @Test
@@ -144,13 +164,12 @@ public class TestXMLReader {
         }
 
         List<MockFlowFile> flowFile = runner.getFlowFilesForRelationship(TestXMLReaderProcessor.SUCCESS);
-        List<String> records = Arrays.asList(new String(runner.getContentAsByteArray(flowFile.get(0))).split("\n"));
-
+        List<String> records = sort(Arrays.asList((new String(runner.getContentAsByteArray(flowFile.get(0)))).split("\n")));
         assertEquals(4, records.size());
-        assertEquals("MapRecord[{COUNTRY=USA, ATTR_ID=P1, NAME=Cleve Butler, AGE=42}]", records.get(0));
-        assertEquals("MapRecord[{COUNTRY=UK, ATTR_ID=P2, NAME=Ainslie Fletcher, AGE=33}]", records.get(1));
-        assertEquals("MapRecord[{COUNTRY=FR, ATTR_ID=P3, NAME=Amélie Bonfils, AGE=74}]", records.get(2));
-        assertEquals("MapRecord[{COUNTRY=USA, ATTR_ID=P4, NAME=Elenora Scrivens, AGE=16}]", records.get(3));
+        assertEquals("MapRecord[{AGE=42, ATTR_ID=P1, COUNTRY=USA, NAME=Cleve Butler}]", records.get(0));
+        assertEquals("MapRecord[{AGE=33, ATTR_ID=P2, COUNTRY=UK, NAME=Ainslie Fletcher}]", records.get(1));
+        assertEquals("MapRecord[{AGE=74, ATTR_ID=P3, COUNTRY=FR, NAME=Amélie Bonfils}]", records.get(2));
+        assertEquals("MapRecord[{AGE=16, ATTR_ID=P4, COUNTRY=USA, NAME=Elenora Scrivens}]", records.get(3));
     }
 
     @Test
